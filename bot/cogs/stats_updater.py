@@ -31,7 +31,7 @@ class StatsUpdater(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.task = create_task(self.update_interval(3 * 60))
+        self.task = create_task(self.update_interval(5 * 60))
 
 
     async def update_stats(self):

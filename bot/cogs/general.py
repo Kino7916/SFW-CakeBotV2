@@ -18,7 +18,7 @@ class General(commands.Cog):
     async def im_back_command(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title = "CakeBot v2 info",
-            description="CakeBot player list updates every 3 minutes.\nTo check the player list, see the channels under the statistics category.\nUser /help to see the bot comamnds",
+            description="CakeBot player list updates every 5 minutes.\nTo check the player list, see the channels under the statistics category.\nUser /help to see the bot comamnds",
             color=discord.Color.red()
         )
         await interaction.response.send_message(embed=embed)
