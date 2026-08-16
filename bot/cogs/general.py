@@ -1,6 +1,7 @@
 import logging
 
 import discord
+from datetime import datetime
 from discord import app_commands
 from discord.ext import commands
 from strip_tags import strip_tags
@@ -23,17 +24,6 @@ class General(commands.Cog):
         )
         await interaction.response.send_message(embed=embed)
     
-    @app_commands.command(name="server", description="Get Server player info")
-    async def server_command(self, interaction: discord.Interaction):
-        descriptionText = ""
-        embed = discord.Embed(
-            description=descriptionText,
-            url="https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/fe/3e/km0AUNJRv5AxqtIkWos.gif",
-            type="gifv"
-        )
-        for server in global_cache["servers"]:
-            embed.description = str(embed.description) + f"\n"
-        await interaction.response.send_message(ephemeral=True, embed=embed)
         
     @app_commands.command(name="interview", description="Use this slash commands to get the interviewer role")
     async def im_back_command(self, interaction: discord.Interaction):
@@ -42,6 +32,24 @@ class General(commands.Cog):
             description="IS aliveeee"
         )
         await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="serverstats", description="Displays short statistics on playercounts")
+    async def serverstats_command(self, interaction: discord.Interaction):
+        embed = discord.Embed()
+        embed.color = discord.Color.green()
+        embed.set_footer(icon_url=interaction.user.display_avatar.url)
+        embed.timestamp = datetime.now()
+        for server in global_cache["servers"]:
+            embed.description = (
+                (embed.description or "") + "\n"
+                + strip_tags(server["name"]) + "\n"
+                + f"Player Count: {server["currentPlayers"]}/{server["maxPlayers"]}" + "\n"
+            )
+        try:
+            await interaction.response.send_message(ephemeral=False, embed=embed)
+        except Exception as e:
+            logger.error("Something went wrong", exc_info=e)
+            
     
 async def setup(bot: commands.Bot):
     await bot.add_cog(General(bot))
