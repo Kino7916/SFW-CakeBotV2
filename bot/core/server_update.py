@@ -17,6 +17,7 @@ async def update_server_cache():
         logger.exception("Update Servers Failed D;")
         return
 
+    data = list(filter(lambda sv: "SFW" in sv["name"], data))
     logger.info("Updated Servers cache completed")
     global_cache["servers"] = data
 
