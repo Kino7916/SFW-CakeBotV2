@@ -35,7 +35,7 @@ stats_embed.set_author(name="Server Statistics", icon_url="https://limbuscompany
 stats_embed.set_thumbnail(url="https://limbuscompany.wiki.gg/images/thumb/MD6_Projection_Rate.png/176px-MD6_Projection_Rate.png?250898")
 stats_embed.set_image(url="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/700330/57931a3aa75ae823086fd945d891d6a5c98d6172/header.jpg?t=1792263389")
 stats_embed.description = "You can view our server stats right here!"
-stats_embed.set_footer(text="Retreived from scplist.kr")
+stats_embed.set_footer(text="Retrieved from scplist.kr")
 
 try:
     with open("stat_channel.txt", "rt") as f:
