@@ -5,29 +5,13 @@ import datetime
 import discord
 from discord.ext import commands
 
+from bot.constants import STATS_CATEGORY_ID, STATS_CHANNEL_ID, STATS_SERVERS
 from bot.core.config import settings
 from bot.core.server_update import global_cache
 
-# STATS_CATEGORY_ID = 1533123743814123612
 STATS_MESSAGE_ID = 0
-STATS_CHANNEL_ID = 1566465070291226756
-STATS_SERVERS: list[dict[str, int | str]] = [
-    {
-        # "channel_id": 1533761873017704451,
-        "server_id": 85023,
-        "label_name": "Eagle's Vanilla I"
-    },
-    {
-        # "channel_id": 1533761889476149328,
-        "server_id": 85024,
-        "label_name": "Eagle's Vanilla U"
-    },
-    {
-        # "channel_id": 1533761906958143578,
-        "server_id": 85025,
-        "label_name": "Eagle's Yummy"
-    }
-]
+
+
 logger = logging.getLogger(__name__)
 is_updating = False
 stats_embed = discord.Embed(colour=discord.Colour.from_str("#ff0059"))
@@ -52,7 +36,8 @@ class StatsUpdater(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.task = create_task(self.update_interval(15))
+        self.task = create_task(self.update_stats_interval(15))
+        self.task2 = create_task(self.update_old_stats_interval(5 * 60))
 
     async def update_stats(self):
         global STATS_MESSAGE_ID
@@ -100,47 +85,57 @@ class StatsUpdater(commands.Cog):
                 logger.warning(f"Missing server cache {server_info["label_name"]} ({server_info["server_id"]})")
             else:
                 status_text = f"<:sv_online:1566495562830708766> Online - {stat_info["currentPlayers"]}/{stat_info["maxPlayers"]}"
-            stats_embed.add_field(name=server_info["label_name"], value=status_text, inline=False)
+            stats_embed.add_field(name=f"Eagle's {server_info["label_name"]}", value=status_text, inline=False)
 
         is_updating = False
 
-    # async def update_stats(self):
-    #     if settings.DEV_GUILD_ID is None:
-    #         return
+    async def update_old_stats(self):
+        if settings.DEV_GUILD_ID is None:
+            return
         
-    #     logger.info("Updating Statistics Channels..")
+        logger.info("Updating Statistics Channels..")
+        
+        for server_info in STATS_SERVERS:
+            
+            try:
+                stat_info = next((s for s in global_cache["servers"] if s["serverId"] == server_info["server_id"]), None)
+                if stat_info is None:
+                    logger.warning(f"Missing server cache {server_info["label_name"]} ({server_info["server_id"]})")
+                    continue
 
-    #     for channel_partial in STATS_CHANNELS:
-    #         server = next((s for s in global_cache["servers"] if s["serverId"] == channel_partial["server_id"]), None)
-    #         if server is None:
-    #             logger.warning(f"Missing server cache {channel_partial["label_name"]} ({channel_partial["server_id"]})")
-    #             continue
+                guild = self.bot.get_guild(settings.DEV_GUILD_ID) or await self.bot.fetch_guild(settings.DEV_GUILD_ID)
+                if guild is None:
+                    logger.warning("Invalid guild")
+                    continue
 
-    #         guild = self.bot.get_guild(settings.DEV_GUILD_ID) or await self.bot.fetch_guild(settings.DEV_GUILD_ID)
-    #         if guild is None:
-    #             logger.warning("Invalid guild")
-    #             continue
+                channel = guild.get_channel(int(server_info["channel_id"])) or await guild.fetch_channel(int(server_info["channel_id"]))
+                if channel is None:
+                    logger.warning(f"Missing channel ({server_info["channel_id"]})")
+                    continue
                 
-    #         channel = guild.get_channel(int(channel_partial["channel_id"])) or await guild.fetch_channel(int(channel_partial["channel_id"]))
-    #         if channel is None:
-    #             logger.warning(f"Missing channel ({channel_partial["channel_id"]})")
-    #             continue
+                str_count = channel.name.split()[-1]
+                current_players = str_count.split('/')[0]
+
+                name = f"{server_info["label_name"]} {stat_info['currentPlayers']}/{stat_info['maxPlayers']}"
+                if int(current_players) == stat_info["currentPlayers"]:
+                    if channel.name == name:
+                        continue
                 
-    #         try:
-    #             str_count = channel.name.split()[-1]
-    #             current_players = str_count.split('/')[0]
+                await channel.edit(name=name)
+            except Exception as err:
+                logger.exception("Exception raised on channel.edit", exc_info=err)
+        logger.info("Updating Statistics Channels complete")
 
-    #             if int(current_players) == server["currentPlayers"]:
-    #                 continue
-    #             await channel.edit(name=f"{channel_partial["label_name"]} {server['currentPlayers']}/{server['maxPlayers']}")
-    #         except Exception as err:
-    #             logger.exception("Exception raised on channel.edit", exc_info=err)
-    #     logger.info("Updating Statistics Channels complete")
-
-    async def update_interval(self, debounce: int):
+    async def update_stats_interval(self, debounce: int):
         while True:
             await sleep(1)
             await self.update_stats()
+            await sleep(debounce)
+
+    async def update_old_stats_interval(self, debounce: int):
+        while True:
+            await sleep(5)
+            await self.update_old_stats()
             await sleep(debounce)
 
 async def setup(bot: commands.Bot):
